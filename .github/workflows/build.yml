@@ -27,9 +27,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK
+      - name: Upgrade Gradle & Build APK
         run: |
-          flutter pub upgrade --major-versions
+          flutter create . --platforms=android --org com.asabispeak.app
           flutter build apk --release
 
       - name: Upload APK Artifact
