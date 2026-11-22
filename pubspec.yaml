@@ -1,7 +1,17 @@
 name: asabi_speak
 description: A zero-cost squad voice chat app.
-environment: {sdk: '>=2.18.0 <4.0.0'}
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
 dependencies:
-  flutter: {sdk: flutter}
+  flutter:
+    sdk: flutter
   flutter_background: ^1.2.0
   flutter_overlay_window: ^1.0.2
+  livekit_client: ^2.2.0
+  http: ^1.2.0
+  permission_handler: ^11.3.0
+
+flutter:
+  uses-material-design: true
