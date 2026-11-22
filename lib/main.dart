@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:livekit_client/livekit_client.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-const String sandboxId = 'asabispeak-2jeeoq';
+const String tokenUrl = 'https://asabi-token.merttt67-mk.workers.dev';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,27 +39,20 @@ String? jwtOdaAdi(String token) {
 
 Future<Map<String, String>> tokenAl(String oda, String isim) async {
   final r = await http.post(
-    Uri.parse('https://cloud-api.livekit.io/api/v2/sandbox/connection-details'),
-    headers: {
-      'X-Sandbox-ID': sandboxId,
-      'Content-Type': 'application/json',
-    },
+    Uri.parse(tokenUrl),
+    headers: {'Content-Type': 'application/json'},
     body: jsonEncode({
-      'roomName': oda,
       'room_name': oda,
-      'participantName': isim,
       'participant_name': isim,
-      'participantIdentity': isim,
-      'participant_identity': isim,
     }),
   );
   if (r.statusCode < 200 || r.statusCode >= 300) {
     throw Exception('Token hatası ${r.statusCode}: ${r.body}');
   }
   final j = jsonDecode(r.body);
-  final token = (j['participantToken'] ?? j['participant_token']).toString();
+  final token = j['participant_token'].toString();
   return {
-    'url': (j['serverUrl'] ?? j['server_url']).toString(),
+    'url': j['server_url'].toString(),
     'token': token,
     'oda': jwtOdaAdi(token) ?? '?',
   };
