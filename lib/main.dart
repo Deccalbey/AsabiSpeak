@@ -26,6 +26,17 @@ class AsabiSpeakApp extends StatelessWidget {
   }
 }
 
+String? jwtOdaAdi(String token) {
+  try {
+    final parts = token.split('.');
+    final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+    final j = jsonDecode(payload);
+    return j['video']?['room']?.toString();
+  } catch (e) {
+    return null;
+  }
+}
+
 Future<Map<String, String>> tokenAl(String oda, String isim) async {
   final r = await http.post(
     Uri.parse('https://cloud-api.livekit.io/api/v2/sandbox/connection-details'),
@@ -46,9 +57,11 @@ Future<Map<String, String>> tokenAl(String oda, String isim) async {
     throw Exception('Token hatası ${r.statusCode}: ${r.body}');
   }
   final j = jsonDecode(r.body);
+  final token = (j['participantToken'] ?? j['participant_token']).toString();
   return {
     'url': (j['serverUrl'] ?? j['server_url']).toString(),
-    'token': (j['participantToken'] ?? j['participant_token']).toString(),
+    'token': token,
+    'oda': jwtOdaAdi(token) ?? '?',
   };
 }
 
@@ -60,13 +73,14 @@ class OdaEkrani extends StatefulWidget {
 }
 
 class _OdaEkraniState extends State<OdaEkrani> {
-  final TextEditingController odaCtrl = TextEditingController(text: 'ekip');
+  final TextEditingController odaCtrl = TextEditingController(text: 'Asabiler');
   final TextEditingController isimCtrl = TextEditingController();
 
   bool overlayAktif = false;
   bool bagli = false;
   bool micAcik = false;
   String durum = 'Bağlı değil';
+  String tokenOdasi = '-';
   Room? room;
 
   @override
@@ -129,6 +143,7 @@ class _OdaEkraniState extends State<OdaEkrani> {
       setState(() {
         bagli = true;
         micAcik = false;
+        tokenOdasi = t['oda']!;
         durum = 'Bağlandı';
       });
       FlutterOverlayWindow.shareData('mic:off');
@@ -143,6 +158,7 @@ class _OdaEkraniState extends State<OdaEkrani> {
     setState(() {
       bagli = false;
       micAcik = false;
+      tokenOdasi = '-';
       durum = 'Bağlı değil';
     });
     FlutterOverlayWindow.shareData('mic:off');
@@ -175,7 +191,8 @@ class _OdaEkraniState extends State<OdaEkrani> {
 
   @override
   Widget build(BuildContext context) {
-    final kisiSayisi = bagli ? (room?.remoteParticipants.length ?? 0) + 1 : 0;
+    final uzaktakiler = room?.remoteParticipants.values.toList() ?? [];
+    final kisiSayisi = bagli ? uzaktakiler.length + 1 : 0;
     return Scaffold(
       appBar: AppBar(title: const Text("AsabiSpeak - Ses Kanalı")),
       body: Padding(
@@ -207,6 +224,20 @@ class _OdaEkraniState extends State<OdaEkrani> {
               bagli ? '$durum • Odadaki kişi: $kisiSayisi' : durum,
               textAlign: TextAlign.center,
             ),
+            if (bagli) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Token odası: $tokenOdasi\nSunucudaki oda: ${room?.name ?? "-"}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: Colors.amber),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Odadakiler: Ben${uzaktakiler.map((p) => ", ${p.identity}").join()}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: bagli ? micToggle : null,
